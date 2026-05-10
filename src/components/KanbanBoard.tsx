@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
+import { Film, Tv, Layers2 } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -13,32 +14,46 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { KanbanColumn } from './KanbanColumn';
 import { MediaCard } from './MediaCard';
 import { AddMediaModal } from './AddMediaModal';
+import { ConfirmModal } from './ConfirmModal';
 import { useMediaItems } from '../hooks/useMediaItems';
-import type { MediaItem, MediaStatus } from '../types/media';
+import { useLanguage } from '../contexts/LanguageContext';
+import type { MediaItem, MediaStatus, MediaType } from '../types/media';
 
 const STATUSES: MediaStatus[] = ['want_to_watch', 'watching', 'watched'];
 
-export function KanbanBoard() {
-  const { items, loading, addItem, updateItem, deleteItem, moveItem } = useMediaItems();
+interface Props { search: string; }
+
+export function KanbanBoard({ search }: Props) {
+  const { items, loading, addItem, updateItem, deleteItem, archiveItem, moveItem } = useMediaItems();
+  const { t } = useLanguage();
   const [activeItem, setActiveItem] = useState<MediaItem | null>(null);
   const [modalStatus, setModalStatus] = useState<MediaStatus | null>(null);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<MediaType | 'all'>('all');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const columnItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = items.filter((it) => {
+      const matchesSearch = !q || it.title.toLowerCase().includes(q) || it.genres?.toLowerCase().includes(q);
+      const matchesType = typeFilter === 'all' || it.type === typeFilter;
+      return matchesSearch && matchesType;
+    });
+
     const map: Record<MediaStatus, MediaItem[]> = {
       want_to_watch: [],
       watching: [],
       watched: [],
     };
-    [...items].sort((a, b) => a.order_index - b.order_index).forEach((it) => {
+    [...filtered].sort((a, b) => a.order_index - b.order_index).forEach((it) => {
       map[it.status].push(it);
     });
     return map;
-  }, [items]);
+  }, [items, search, typeFilter]);
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     const found = items.find((i) => i.id === active.id);
@@ -89,9 +104,12 @@ export function KanbanBoard() {
     setEditingItem(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Bu öğeyi silmek istediğine emin misin?')) {
-      await deleteItem(id);
+  const handleDelete = (id: string) => setDeletingId(id);
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      await deleteItem(deletingId);
+      setDeletingId(null);
     }
   };
 
@@ -109,8 +127,34 @@ export function KanbanBoard() {
     );
   }
 
+  const typeOptions: { value: MediaType | 'all'; icon: ReactNode; label: string }[] = [
+    { value: 'all',    icon: <Layers2 size={13} />, label: t('type_all') },
+    { value: 'movie',  icon: <Film size={13} />,    label: t('type_movie') },
+    { value: 'series', icon: <Tv size={13} />,      label: t('type_series') },
+  ];
+
   return (
     <>
+      {/* Type filter toggle */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex items-center gap-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
+          {typeOptions.map(({ value, icon, label }) => (
+            <button
+              key={value}
+              onClick={() => setTypeFilter(value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                typeFilter === value
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -127,6 +171,7 @@ export function KanbanBoard() {
               onEdit={(item) => { setEditingItem(item); setModalStatus(item.status); }}
               onDelete={handleDelete}
               onMove={handleMove}
+              onArchive={archiveItem}
             />
           ))}
         </div>
@@ -146,6 +191,14 @@ export function KanbanBoard() {
           editItem={editingItem}
           onSave={handleSave}
           onClose={() => { setModalStatus(null); setEditingItem(null); }}
+        />
+      )}
+
+      {deletingId && (
+        <ConfirmModal
+          message={t('delete_confirm_msg')}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingId(null)}
         />
       )}
     </>

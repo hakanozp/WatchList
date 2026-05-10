@@ -15,6 +15,10 @@ export interface MediaItem {
   poster_url?: string | null;
   tmdb_id?: number | null;
   rating?: MediaRating | null;
+  overview?: string | null;
+  genres?: string | null;
+  archived: boolean;
+  archived_at?: string | null;
   order_index: number;
   created_at: string;
   updated_at: string;
@@ -35,21 +39,19 @@ export interface TMDBSearchResult {
   release_date?: string;
   first_air_date?: string;
   overview: string;
+  genre_ids?: number[];
 }
 
-export const COLUMN_CONFIG: Record<MediaStatus, { label: string; color: string; headerColor: string }> = {
+export const COLUMN_CONFIG: Record<MediaStatus, { color: string; headerColor: string }> = {
   want_to_watch: {
-    label: 'İzlemek İstiyorum',
     color: 'border-blue-500',
     headerColor: 'bg-blue-500',
   },
   watching: {
-    label: 'Şu An İzliyorum',
     color: 'border-yellow-500',
     headerColor: 'bg-yellow-500',
   },
   watched: {
-    label: 'İzledim',
     color: 'border-green-500',
     headerColor: 'bg-green-500',
   },

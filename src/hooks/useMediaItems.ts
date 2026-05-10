@@ -12,6 +12,7 @@ export function useMediaItems() {
     const { data, error } = await supabase
       .from('media_items')
       .select('*')
+      .eq('archived', false)
       .order('order_index', { ascending: true });
 
     if (error) {
@@ -55,6 +56,15 @@ export function useMediaItems() {
     setItems((prev) => prev.filter((it) => it.id !== id));
   }, []);
 
+  const archiveItem = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('media_items')
+      .update({ archived: true, archived_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    setItems((prev) => prev.filter((it) => it.id !== id));
+  }, []);
+
   const moveItem = useCallback(async (id: string, newStatus: MediaStatus, newIndex: number) => {
     setItems((prev) => {
       const updated = prev.map((it) =>
@@ -68,5 +78,5 @@ export function useMediaItems() {
       .eq('id', id);
   }, []);
 
-  return { items, loading, error, addItem, updateItem, deleteItem, moveItem, refetch: fetchItems };
+  return { items, loading, error, addItem, updateItem, deleteItem, archiveItem, moveItem, refetch: fetchItems };
 }
