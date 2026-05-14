@@ -103,7 +103,7 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
   return (
     /* Backdrop — mobilde alta hizala, masaüstünde ortala */
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center sm:p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 w-full sm:max-w-md flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92dvh] sm:max-h-[90vh]">
+      <div className="bg-white dark:bg-gray-800 w-full sm:max-w-md flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl" style={{maxHeight: 'min(92svh, 92dvh)'}}>
 
         {/* Drag handle — sadece mobilde */}
         <div className="flex justify-center pt-2.5 pb-1 sm:hidden">
@@ -124,7 +124,7 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
         </div>
 
         {/* Scrollable form body */}
-        <div className="overflow-y-auto flex-1 overscroll-contain">
+        <div className="overflow-y-auto flex-1 min-h-0 overscroll-contain">
           <form id="media-form" onSubmit={handleSubmit} className="p-5 space-y-4">
             <TMDBSearch onSelect={handleTMDBSelect} />
 
