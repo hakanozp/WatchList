@@ -1,5 +1,4 @@
-import { useState, useMemo, type ReactNode } from 'react';
-import { Film, Tv, Layers2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -21,16 +20,15 @@ import type { MediaItem, MediaStatus, MediaType } from '../types/media';
 
 const STATUSES: MediaStatus[] = ['want_to_watch', 'watching', 'watched'];
 
-interface Props { search: string; }
+interface Props { search: string; typeFilter: MediaType | 'all'; }
 
-export function KanbanBoard({ search }: Props) {
+export function KanbanBoard({ search, typeFilter }: Props) {
   const { items, loading, addItem, updateItem, deleteItem, archiveItem, moveItem } = useMediaItems();
   const { t } = useLanguage();
   const [activeItem, setActiveItem] = useState<MediaItem | null>(null);
   const [modalStatus, setModalStatus] = useState<MediaStatus | null>(null);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<MediaType | 'all'>('all');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -127,34 +125,8 @@ export function KanbanBoard({ search }: Props) {
     );
   }
 
-  const typeOptions: { value: MediaType | 'all'; icon: ReactNode; label: string }[] = [
-    { value: 'all',    icon: <Layers2 size={13} />, label: t('type_all') },
-    { value: 'movie',  icon: <Film size={13} />,    label: t('type_movie') },
-    { value: 'series', icon: <Tv size={13} />,      label: t('type_series') },
-  ];
-
   return (
     <>
-      {/* Type filter toggle */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex items-center gap-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
-          {typeOptions.map(({ value, icon, label }) => (
-            <button
-              key={value}
-              onClick={() => setTypeFilter(value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                typeFilter === value
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              {icon}
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
