@@ -14,9 +14,11 @@ export default function App() {
   const { t, lang, setLang } = useLanguage();
   const { user, loading, signOut } = useAuth();
   const [search, setSearch] = useState('');
+  const [archiveSearch, setArchiveSearch] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<NavTab>('board');
   const [typeFilter, setTypeFilter] = useState<MediaType | 'all'>('all');
+  const [archiveTypeFilter, setArchiveTypeFilter] = useState<MediaType | 'all'>('all');
 
   // Auth loading — blank screen while restoring session
   if (loading) {
@@ -67,23 +69,29 @@ export default function App() {
                   { value: 'all'    as const, icon: <Layers2 size={13} />, label: t('type_all') },
                   { value: 'movie'  as const, icon: <Film size={13} />,    label: t('type_movie') },
                   { value: 'series' as const, icon: <Tv size={13} />,      label: t('type_series') },
-                ]).map(({ value, icon, label }) => (
-                  <button key={value} onClick={() => setTypeFilter(value)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                      typeFilter === value
-                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                    }`}>
-                    {icon}{label}
-                  </button>
-                ))}
+                ]).map(({ value, icon, label }) => {
+                  const active = activeTab === 'board' ? typeFilter : archiveTypeFilter;
+                  const setter = activeTab === 'board' ? setTypeFilter : setArchiveTypeFilter;
+                  return (
+                    <button key={value} onClick={() => setter(value)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                        active === value
+                          ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                      }`}>
+                      {icon}{label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Arama */}
-              <div className={`flex-1 relative max-w-md ${activeTab !== 'board' ? 'invisible' : ''}`}>
+              <div className="flex-1 relative max-w-md">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t('search_placeholder')}
+                <input type="text"
+                  value={activeTab === 'board' ? search : archiveSearch}
+                  onChange={(e) => activeTab === 'board' ? setSearch(e.target.value) : setArchiveSearch(e.target.value)}
+                  placeholder={activeTab === 'board' ? t('search_placeholder') : t('archive_search')}
                   className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -133,9 +141,9 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Mobil alt satırlar ── */}
+          {/* ── Mobil alt satırlar — her iki sekme için aynı layout ── */}
           <div className="sm:hidden flex flex-col gap-2 pb-2.5">
-            {/* Tahta/Arşiv + Tür filtresi — yan yana */}
+            {/* Satır 1: Tahta/Arşiv + Tür filtresi yan yana */}
             <div className="flex gap-2">
               <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
                 {(['board', 'archive'] as NavTab[]).map((tab) => (
@@ -156,29 +164,33 @@ export default function App() {
                   { value: 'all'    as const, icon: <Layers2 size={13} />, label: t('type_all') },
                   { value: 'movie'  as const, icon: <Film size={13} />,    label: t('type_movie') },
                   { value: 'series' as const, icon: <Tv size={13} />,      label: t('type_series') },
-                ]).map(({ value, icon, label }) => (
-                  <button key={value} onClick={() => setTypeFilter(value)}
-                    className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                      typeFilter === value
-                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                    {icon}{label}
-                  </button>
-                ))}
+                ]).map(({ value, icon, label }) => {
+                  const active = activeTab === 'board' ? typeFilter : archiveTypeFilter;
+                  const setter = activeTab === 'board' ? setTypeFilter : setArchiveTypeFilter;
+                  return (
+                    <button key={value} onClick={() => setter(value)}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                        active === value
+                          ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                      {icon}{label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Arama */}
-            {activeTab === 'board' && (
-              <div className="relative">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t('search_placeholder')}
-                  className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            )}
+            {/* Satır 2: Arama */}
+            <div className="relative">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input type="text"
+                value={activeTab === 'board' ? search : archiveSearch}
+                onChange={(e) => activeTab === 'board' ? setSearch(e.target.value) : setArchiveSearch(e.target.value)}
+                placeholder={activeTab === 'board' ? t('search_placeholder') : t('archive_search')}
+                className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
 
         </div>
@@ -188,7 +200,7 @@ export default function App() {
         {activeTab === 'board' ? (
           <KanbanBoard search={search} typeFilter={typeFilter} />
         ) : (
-          <ArchivePage />
+          <ArchivePage search={archiveSearch} typeFilter={archiveTypeFilter} />
         )}
       </main>
     </div>
