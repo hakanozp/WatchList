@@ -3,12 +3,13 @@ import { Film, Search, LogOut, ChevronDown, Columns2, Archive, Layers2, Tv } fro
 import { KanbanBoard } from './components/KanbanBoard';
 import { ArchivePage } from './components/ArchivePage';
 import { LoginPage } from './components/LoginPage';
+import { InsightsDashboard } from './components/InsightsDashboard';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import type { Lang } from './lib/translations';
 import type { MediaType } from './types/media';
 
-type NavTab = 'board' | 'archive';
+type NavTab = 'board' | 'archive' | 'insights';
 
 export default function App() {
   const { t, lang, setLang } = useLanguage();
@@ -46,55 +47,59 @@ export default function App() {
               Watchlist
             </h1>
 
-            {/* Desktop ortası: Tahta/Arşiv → Tür filtresi → Arama */}
+            {/* Desktop ortası: Tahta/Arşiv/İstatistikler → Tür filtresi → Arama */}
             <div className="hidden sm:flex flex-1 items-center gap-2">
-              {/* Tahta / Arşiv */}
+              {/* Tahta / Arşiv / İstatistikler */}
               <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 flex-shrink-0">
-                {(['board', 'archive'] as NavTab[]).map((tab) => (
+                {(['board', 'archive', 'insights'] as NavTab[]).map((tab) => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                       activeTab === tab
                         ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                     }`}>
-                    {tab === 'board' ? <Columns2 size={13} /> : <Archive size={13} />}
-                    {t(tab === 'board' ? 'nav_board' : 'nav_archive')}
+                    {tab === 'board' ? <Columns2 size={13} /> : tab === 'archive' ? <Archive size={13} /> : <Layers2 size={13} />}
+                    {t(tab === 'board' ? 'nav_board' : tab === 'archive' ? 'nav_archive' : 'nav_insights')}
                   </button>
                 ))}
               </div>
 
-              {/* Tür filtresi */}
-              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 flex-shrink-0">
-                {([
-                  { value: 'all'    as const, icon: <Layers2 size={13} />, label: t('type_all') },
-                  { value: 'movie'  as const, icon: <Film size={13} />,    label: t('type_movie') },
-                  { value: 'series' as const, icon: <Tv size={13} />,      label: t('type_series') },
-                ]).map(({ value, icon, label }) => {
-                  const active = activeTab === 'board' ? typeFilter : archiveTypeFilter;
-                  const setter = activeTab === 'board' ? setTypeFilter : setArchiveTypeFilter;
-                  return (
-                    <button key={value} onClick={() => setter(value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                        active === value
-                          ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                      }`}>
-                      {icon}{label}
-                    </button>
-                  );
-                })}
-              </div>
+              {activeTab !== 'insights' && (
+                <>
+                  {/* Tür filtresi */}
+                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 flex-shrink-0">
+                    {([
+                      { value: 'all'    as const, icon: <Layers2 size={13} />, label: t('type_all') },
+                      { value: 'movie'  as const, icon: <Film size={13} />,    label: t('type_movie') },
+                      { value: 'series' as const, icon: <Tv size={13} />,      label: t('type_series') },
+                    ]).map(({ value, icon, label }) => {
+                      const active = activeTab === 'board' ? typeFilter : archiveTypeFilter;
+                      const setter = activeTab === 'board' ? setTypeFilter : setArchiveTypeFilter;
+                      return (
+                        <button key={value} onClick={() => setter(value)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                            active === value
+                              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                          }`}>
+                          {icon}{label}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-              {/* Arama */}
-              <div className="flex-1 relative max-w-md">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input type="text"
-                  value={activeTab === 'board' ? search : archiveSearch}
-                  onChange={(e) => activeTab === 'board' ? setSearch(e.target.value) : setArchiveSearch(e.target.value)}
-                  placeholder={activeTab === 'board' ? t('search_placeholder') : t('archive_search')}
-                  className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+                  {/* Arama */}
+                  <div className="flex-1 relative max-w-md">
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input type="text"
+                      value={activeTab === 'board' ? search : archiveSearch}
+                      onChange={(e) => activeTab === 'board' ? setSearch(e.target.value) : setArchiveSearch(e.target.value)}
+                      placeholder={activeTab === 'board' ? t('search_placeholder') : t('archive_search')}
+                      className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Mobil ortası: boşluk */}
@@ -143,64 +148,73 @@ export default function App() {
 
           {/* ── Mobil alt satırlar — her iki sekme için aynı layout ── */}
           <div className="sm:hidden flex flex-col gap-2 pb-2.5">
-            {/* Satır 1: Tahta/Arşiv + Tür filtresi yan yana */}
+            {/* Satır 1: Tahta/Arşiv/İstatistikler */}
             <div className="flex gap-2">
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-                {(['board', 'archive'] as NavTab[]).map((tab) => (
+              <div className="flex flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                {(['board', 'archive', 'insights'] as NavTab[]).map((tab) => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                       activeTab === tab
                         ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                         : 'text-gray-500 dark:text-gray-400'
                     }`}>
-                    {tab === 'board' ? <Columns2 size={13} /> : <Archive size={13} />}
-                    {t(tab === 'board' ? 'nav_board' : 'nav_archive')}
+                    {tab === 'board' ? <Columns2 size={13} /> : tab === 'archive' ? <Archive size={13} /> : <Layers2 size={13} />}
+                    {t(tab === 'board' ? 'nav_board' : tab === 'archive' ? 'nav_archive' : 'nav_insights')}
                   </button>
                 ))}
               </div>
-
-              <div className="flex flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-                {([
-                  { value: 'all'    as const, icon: <Layers2 size={13} />, label: t('type_all') },
-                  { value: 'movie'  as const, icon: <Film size={13} />,    label: t('type_movie') },
-                  { value: 'series' as const, icon: <Tv size={13} />,      label: t('type_series') },
-                ]).map(({ value, icon, label }) => {
-                  const active = activeTab === 'board' ? typeFilter : archiveTypeFilter;
-                  const setter = activeTab === 'board' ? setTypeFilter : setArchiveTypeFilter;
-                  return (
-                    <button key={value} onClick={() => setter(value)}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                        active === value
-                          ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                          : 'text-gray-500 dark:text-gray-400'
-                      }`}>
-                      {icon}{label}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
 
-            {/* Satır 2: Arama */}
-            <div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input type="text"
-                value={activeTab === 'board' ? search : archiveSearch}
-                onChange={(e) => activeTab === 'board' ? setSearch(e.target.value) : setArchiveSearch(e.target.value)}
-                placeholder={activeTab === 'board' ? t('search_placeholder') : t('archive_search')}
-                className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            {activeTab !== 'insights' && (
+              <>
+                {/* Satır 2: Tür filtresi */}
+                <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                  {([
+                    { value: 'all'    as const, icon: <Layers2 size={13} />, label: t('type_all') },
+                    { value: 'movie'  as const, icon: <Film size={13} />,    label: t('type_movie') },
+                    { value: 'series' as const, icon: <Tv size={13} />,      label: t('type_series') },
+                  ]).map(({ value, icon, label }) => {
+                    const active = activeTab === 'board' ? typeFilter : archiveTypeFilter;
+                    const setter = activeTab === 'board' ? setTypeFilter : setArchiveTypeFilter;
+                    return (
+                      <button key={value} onClick={() => setter(value)}
+                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                          active === value
+                            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                        {icon}{label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Satır 3: Arama */}
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input type="text"
+                    value={activeTab === 'board' ? search : archiveSearch}
+                    onChange={(e) => activeTab === 'board' ? setSearch(e.target.value) : setArchiveSearch(e.target.value)}
+                    placeholder={activeTab === 'board' ? t('search_placeholder') : t('archive_search')}
+                    className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6">
-        {activeTab === 'board' ? (
+        {activeTab === 'board' && (
           <KanbanBoard search={search} typeFilter={typeFilter} />
-        ) : (
+        )}
+        {activeTab === 'archive' && (
           <ArchivePage search={archiveSearch} typeFilter={archiveTypeFilter} />
+        )}
+        {activeTab === 'insights' && (
+          <InsightsDashboard />
         )}
       </main>
     </div>

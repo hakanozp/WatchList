@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { ArchiveRestore, Trash2, Tv, Film } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ArchiveRestore, Trash2, Tv, Film, SlidersHorizontal, ArrowUpDown, Tag, Star } from 'lucide-react';
 import { useArchivedItems } from '../hooks/useArchivedItems';
 import { useLanguage } from '../contexts/LanguageContext';
 import { RATING_CONFIG } from '../types/media';
-import type { MediaRating, MediaType } from '../types/media';
+import type { MediaRating, MediaType, SortOption } from '../types/media';
 import type { TranslationKey } from '../lib/translations';
 
 const RATING_LABEL_KEY: Record<MediaRating, TranslationKey> = {
@@ -22,12 +22,48 @@ export function ArchivePage({ search, typeFilter }: Props) {
   const { t } = useLanguage();
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const filtered = items.filter((item) => {
-    const q = search.toLowerCase();
-    const matchesSearch = !q || item.title.toLowerCase().includes(q) || (item.genres?.toLowerCase().includes(q) ?? false);
-    const matchesType = typeFilter === 'all' || item.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
+  const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
+  const [ratingFilter, setRatingFilter] = useState<MediaRating | 'all'>('all');
+  const [tagFilter, setTagFilter] = useState<string | 'all'>('all');
+
+  const allTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    items.forEach((item) => {
+      item.custom_tags?.forEach((tag) => tagsSet.add(tag));
+    });
+    return Array.from(tagsSet).sort();
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const matches = items.filter((item) => {
+      const matchesSearch =
+        !q ||
+        item.title.toLowerCase().includes(q) ||
+        (item.genres?.toLowerCase().includes(q) ?? false) ||
+        item.custom_tags?.some((tag) => tag.toLowerCase().includes(q));
+      const matchesType = typeFilter === 'all' || item.type === typeFilter;
+      const matchesRating = ratingFilter === 'all' || item.rating === ratingFilter;
+      const matchesTag = tagFilter === 'all' || item.custom_tags?.includes(tagFilter);
+      return matchesSearch && matchesType && matchesRating && matchesTag;
+    });
+
+    const getRatingWeight = (r?: MediaRating | null) => {
+      if (r === 'liked') return 3;
+      if (r === 'okay') return 2;
+      if (r === 'disliked') return 1;
+      return 0;
+    };
+
+    return [...matches].sort((a, b) => {
+      if (sortBy === 'title_asc') return a.title.localeCompare(b.title);
+      if (sortBy === 'title_desc') return b.title.localeCompare(a.title);
+      if (sortBy === 'created_at_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === 'created_at_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === 'rating_desc') return getRatingWeight(b.rating) - getRatingWeight(a.rating);
+      return (b.archived_at ?? '').localeCompare(a.archived_at ?? '');
+    });
+  }, [items, search, typeFilter, sortBy, ratingFilter, tagFilter]);
 
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return '—';
@@ -46,6 +82,64 @@ export function ArchivePage({ search, typeFilter }: Props) {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
+      {/* Sleek Filters & Sorting Toolbar */}
+      <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 p-3 rounded-2xl mb-6 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3 flex-1 flex-wrap">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={14} className="text-gray-400" />
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('sort_label')}:</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Rating Filter */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-xl border border-gray-200 dark:border-gray-705 shadow-sm">
+              <Star size={12} className="text-yellow-500" />
+              <select
+                value={ratingFilter}
+                onChange={(e) => setRatingFilter(e.target.value as MediaRating | 'all')}
+                className="text-xs bg-transparent border-none text-gray-750 dark:text-gray-200 focus:outline-none cursor-pointer"
+              >
+                <option value="all">{t('filter_all_ratings')}</option>
+                <option value="liked">👍 {t('rating_liked')}</option>
+                <option value="okay">😐 {t('rating_okay')}</option>
+                <option value="disliked">👎 {t('rating_disliked')}</option>
+              </select>
+            </div>
+
+            {/* Tag Filter */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-xl border border-gray-200 dark:border-gray-705 shadow-sm">
+              <Tag size={12} className="text-blue-500" />
+              <select
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className="text-xs bg-transparent border-none text-gray-750 dark:text-gray-200 focus:outline-none cursor-pointer max-w-[120px]"
+              >
+                <option value="all">{t('filter_all_tags')}</option>
+                {allTags.map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Sort Controls */}
+        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-xl border border-gray-200 dark:border-gray-705 shadow-sm">
+          <ArrowUpDown size={12} className="text-purple-500" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="text-xs bg-transparent border-none text-gray-750 dark:text-gray-200 focus:outline-none cursor-pointer"
+          >
+            <option value="order_index">{t('sort_order_index')}</option>
+            <option value="title_asc">{t('sort_title_asc')}</option>
+            <option value="title_desc">{t('sort_title_desc')}</option>
+            <option value="created_at_desc">{t('sort_created_at_desc')}</option>
+            <option value="created_at_asc">{t('sort_created_at_asc')}</option>
+            <option value="rating_desc">{t('sort_rating_desc')}</option>
+          </select>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -113,6 +207,15 @@ export function ArchivePage({ search, typeFilter }: Props) {
                       </div>
                     )}
 
+                    {/* Custom Tags */}
+                    {item.custom_tags && item.custom_tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {item.custom_tags.map((tag) => (
+                          <span key={tag} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-150/40 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Tarih + not */}
                     <div className="flex items-center gap-2 mt-auto">
                       <span className="text-[10px] text-gray-400">{formatDate(item.archived_at)}</span>
@@ -165,13 +268,24 @@ export function ArchivePage({ search, typeFilter }: Props) {
                         </span>
                       </td>
                       <td className="px-4 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {item.genres
-                            ? item.genres.split(',').map((g) => g.trim()).filter(Boolean).map((g) => (
+                        <div className="flex flex-col gap-1">
+                          {item.genres && (
+                            <div className="flex flex-wrap gap-1">
+                              {item.genres.split(',').map((g) => g.trim()).filter(Boolean).map((g) => (
                                 <span key={g} className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">{g}</span>
-                              ))
-                            : <span className="text-xs text-gray-400">—</span>
-                          }
+                              ))}
+                            </div>
+                          )}
+                          {item.custom_tags && item.custom_tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {item.custom_tags.map((tag) => (
+                                <span key={tag} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-150/40 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30">{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                          {!item.genres && (!item.custom_tags || item.custom_tags.length === 0) && (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-2">

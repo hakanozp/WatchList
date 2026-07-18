@@ -41,6 +41,8 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
   const [rating, setRating] = useState<MediaRating | null>(null);
   const [overview, setOverview] = useState('');
   const [genres, setGenres] = useState('');
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
 
   const showRating = status === 'watching' || status === 'watched';
@@ -59,6 +61,7 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
       setRating(editItem.rating ?? null);
       setOverview(editItem.overview ?? '');
       setGenres(editItem.genres ?? '');
+      setCustomTags(editItem.custom_tags ?? []);
     }
   }, [editItem]);
 
@@ -72,6 +75,21 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
       const resolved = await resolveGenres(r.genre_ids, t('tmdb_lang'));
       setGenres(resolved);
     }
+  };
+
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = tagInput.trim().replace(/,$/, '');
+      if (val && !customTags.includes(val)) {
+        setCustomTags((prev) => [...prev, val]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setCustomTags((prev) => prev.filter((t) => t !== tag));
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -92,6 +110,7 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
       rating: showRating ? rating : null,
       overview: overview.trim() || null,
       genres: genres.trim() || null,
+      custom_tags: customTags,
       archived: editItem?.archived ?? false,
       archived_at: editItem?.archived_at ?? null,
       order_index: editItem?.order_index ?? 0,
@@ -102,18 +121,17 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
 
   return (
     <>
-      {/* Desktop backdrop */}
-      <div className="hidden sm:block fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      {/* Backdrop — active on all screen sizes */}
+      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      {/*
-       * Kart — mobilde fixed inset-0 (viewport'a doğrudan sabitli, hiçbir üst elemana bağlı değil)
-       *        desktop'ta centered modal (z-50 ile backdrop'un üstünde)
-       */}
+      {/* Modal Card — centered and rounded on all screen sizes */}
       <div className="
-        fixed inset-0 z-50 flex flex-col overflow-hidden
+        fixed z-50 flex flex-col overflow-hidden
         bg-white dark:bg-gray-800
-        sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2
-        sm:w-full sm:max-w-sm sm:max-h-[90svh] sm:rounded-2xl sm:shadow-2xl
+        inset-auto top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+        w-[92vw] sm:w-full sm:max-w-sm
+        max-h-[85vh] sm:max-h-[90svh]
+        rounded-2xl shadow-2xl
       ">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -252,6 +270,36 @@ export function AddMediaModal({ defaultStatus, editItem, onSave, onClose }: Prop
                 rows={2}
                 placeholder={t('notes_placeholder')}
                 className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
+
+            {/* Custom Tags */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('tags_label')}</label>
+              <div className="flex flex-wrap gap-1 mb-1.5">
+                {customTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/50"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="hover:text-red-500 font-bold ml-0.5 focus:outline-none cursor-pointer"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleAddTag}
+                placeholder={t('tags_placeholder')}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </form>

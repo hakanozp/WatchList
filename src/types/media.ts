@@ -20,9 +20,18 @@ export interface MediaItem {
   archived: boolean;
   archived_at?: string | null;
   order_index: number;
+  custom_tags?: string[] | null;
   created_at: string;
   updated_at: string;
 }
+
+export type SortOption =
+  | 'order_index'
+  | 'title_asc'
+  | 'title_desc'
+  | 'created_at_desc'
+  | 'created_at_asc'
+  | 'rating_desc';
 
 export const RATING_CONFIG: Record<MediaRating, { label: string; emoji: string; color: string }> = {
   disliked: { label: 'Beğenmedim', emoji: '👎', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },

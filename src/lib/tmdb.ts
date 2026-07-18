@@ -48,3 +48,43 @@ export async function searchTMDB(query: string, lang = 'tr-TR'): Promise<TMDBSea
 export function posterUrl(path: string | null): string | null {
   return path ? `${POSTER_BASE}${path}` : null;
 }
+
+export interface TMDBDetails {
+  runtime?: number | null;
+  episode_run_time?: number[];
+  vote_average?: number;
+  release_date?: string;
+  first_air_date?: string;
+  overview?: string;
+  credits?: {
+    cast?: {
+      name: string;
+      character: string;
+      profile_path: string | null;
+    }[];
+    crew?: {
+      name: string;
+      job: string;
+    }[];
+  };
+}
+
+export async function fetchTMDBDetails(
+  tmdbId: number,
+  mediaType: 'movie' | 'series',
+  lang = 'tr-TR'
+): Promise<TMDBDetails | null> {
+  if (!tmdbId || !API_KEY) return null;
+
+  const endpoint = mediaType === 'series' ? 'tv' : 'movie';
+  const url = `${BASE_URL}/${endpoint}/${tmdbId}?api_key=${API_KEY}&language=${lang}&append_to_response=credits`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error('Error fetching TMDB details:', err);
+    return null;
+  }
+}
